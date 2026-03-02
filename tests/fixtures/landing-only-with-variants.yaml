@@ -1,0 +1,73 @@
+# Test fixture: Landing-only page with 2 variants, no auth, no database
+# Minimal configuration with experiment matrix — just variant landing pages.
+idea:
+  name: test-landing-variants
+  title: Landing Variants — Minimal Static Page with Messaging Variants
+  owner: tester
+  template_repo: acme/experiment-template
+
+  problem: |
+    Users need a simple landing page to validate demand before building a product.
+
+  solution: |
+    A single static landing page with a CTA to collect interest via email signup form (no auth).
+
+  target_user: Founders testing market demand
+
+  distribution: |
+    Share link in relevant communities and social media.
+
+  variants:
+    - slug: urgency
+      headline: "Validate Your Idea Before You Build"
+      subheadline: "Stop guessing. Test demand with a landing page in minutes."
+      cta: "Start Validating Now"
+      pain_points:
+        - "Building without validation wastes months"
+        - "Surveys and interviews are slow and biased"
+        - "You need real purchase intent, not opinions"
+      default: true
+    - slug: ease
+      headline: "The Fastest Way to Test Market Demand"
+      subheadline: "One page, one CTA, real data. No code required."
+      cta: "Create Your Test Page"
+      pain_points:
+        - "Setting up landing pages is too complex"
+        - "Analytics tools have a steep learning curve"
+        - "You just want to know if people will pay"
+
+  pages:
+    - name: landing
+      purpose: Explain the value prop and collect email signups via a simple form
+
+  features:
+    - Static landing page with hero section and CTA
+    - Email collection via simple form (no auth required)
+
+  primary_metric: Email signups
+  target_value: "50 email signups in 1 week"
+  measurement_window: 1 week
+
+  stack:
+    framework: nextjs
+    analytics: posthog
+    ui: shadcn
+    hosting: vercel
+
+events:
+  standard_funnel:
+    - event: visit_landing
+      trigger: User loads the landing page
+    - event: activate
+      trigger: User submits email in the interest form
+    - event: retain_return
+      trigger: User returns after 24+ hours
+  custom_events: []
+
+assertions:
+  payment_events_required: false
+  activate_required: false
+  skippable_events: [signup_start, signup_complete]
+  min_pages: 1
+  has_variants: true
+  variant_count: 2

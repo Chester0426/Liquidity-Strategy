@@ -1,0 +1,90 @@
+# Test fixture: Full-stack app (auth + database, no payment) with 2 variants
+# Tests experiment matrix support with variant messaging.
+idea:
+  name: test-full-stack-variants
+  title: FullStack Variants — MVP with Auth, Database, and Messaging Variants
+  owner: tester
+  template_repo: acme/experiment-template
+
+  problem: |
+    Freelancers billing fewer than 5 clients per month waste time on invoicing.
+    They bounce between spreadsheets and manual payment follow-ups.
+
+  solution: |
+    A single-page invoicing tool where freelancers create an invoice in under 60 seconds,
+    send a payment link to clients, and get notified when paid.
+
+  target_user: Freelance designers and developers billing 1-5 clients per month
+
+  distribution: |
+    Post launch in r/freelance and Indie Hackers. LinkedIn posts targeting freelancers.
+
+  variants:
+    - slug: speed
+      headline: "Invoice Clients in 60 Seconds"
+      subheadline: "Stop wasting hours on invoicing. Create, send, get paid."
+      cta: "Send Your First Invoice"
+      pain_points:
+        - "Manual invoicing wastes hours every week"
+        - "Chasing payments is exhausting"
+        - "Existing tools are overkill for solo freelancers"
+      default: true
+    - slug: simplicity
+      headline: "Dead-Simple Invoicing for Freelancers"
+      subheadline: "No accounting degree needed. Professional invoices in minutes."
+      cta: "Start Invoicing Free"
+      pain_points:
+        - "FreshBooks and QuickBooks are too complex"
+        - "You just need to send an invoice, not run accounting"
+        - "Spreadsheet invoices look unprofessional"
+
+  pages:
+    - name: landing
+      purpose: Explain value prop, show pricing, collect signups
+    - name: signup
+      purpose: Email/password registration form
+    - name: login
+      purpose: Email/password login form
+    - name: dashboard
+      purpose: List all invoices with status and total revenue
+    - name: invoice-create
+      purpose: Form to create a new invoice with line items
+
+  features:
+    - Create invoices with line items, tax, and due date
+    - Send invoice link to client via email
+    - Dashboard showing invoice statuses and total revenue
+
+  primary_metric: Invoices sent
+  target_value: "10 freelancers send at least 1 invoice"
+  measurement_window: 2 weeks
+
+  stack:
+    framework: nextjs
+    hosting: vercel
+    database: supabase
+    auth: supabase
+    analytics: posthog
+    ui: shadcn
+
+events:
+  standard_funnel:
+    - event: visit_landing
+      trigger: User loads the landing page
+    - event: signup_start
+      trigger: User opens the registration form
+    - event: signup_complete
+      trigger: User successfully creates an account
+    - event: activate
+      trigger: User creates their first invoice
+    - event: retain_return
+      trigger: User returns after 24+ hours
+  custom_events: []
+
+assertions:
+  payment_events_required: false
+  activate_required: true
+  skippable_events: []
+  min_pages: 5
+  has_variants: true
+  variant_count: 2
