@@ -9,29 +9,34 @@
 # 3. When you're done, open Claude Code and run: /bootstrap
 
 # --- Identity ---
-name: TODO                  # Lowercase slug, hyphens only (e.g., "quick-bill"). Used in analytics.
-title: TODO                 # Human-readable title (e.g., "QuickBill — Fast Invoicing for Freelancers")
-owner: TODO                 # Your name or handle (e.g., "sarah"). Used in analytics.
+name: liquidity-strategy    # Lowercase slug, hyphens only (e.g., "quick-bill"). Used in analytics.
+title: LQST — Liquidity Strategy  # Human-readable title (e.g., "QuickBill — Fast Invoicing for Freelancers")
+owner: Chester              # Your name or handle (e.g., "sarah"). Used in analytics.
 template_repo: magpiexyz-lab/mvp-template  # GitHub repo where retro feedback is filed
 
 # --- Problem & Solution ---
 problem: |
-  TODO: Describe the pain point in 1-3 sentences.
-  Who has this problem? How do they cope today?
+  Non-yield-bearing tokens cannot participate in the AeroST token model.
 
 
 
 solution: |
-  TODO: Describe your proposed solution in 1-3 sentences.
-  What does the user get that they don't have today?
+  Replace vault-held assets with LP positions on ORCA or an in-house DEX,
+  using market-making fees as the protocol's base yield. This removes the
+  VE-model restriction — almost any token, including high-volatility MEME
+  tokens, can participate in the ST mechanism. The protocol also generates
+  permanently locked, protocol-owned liquidity as a structural benefit.
 
 
 
-target_user: "TODO: Be specific (e.g., freelance designers billing <5 clients/month)"
+target_user: "Meme token communities and speculative DeFi yield seekers"
 
 distribution: |
-  TODO: How will you get this in front of target users?
-  e.g., Post in r/freelance, Indie Hackers, LinkedIn outreach
+  Partner with high-market-cap community tokens or specific Meme token
+  communities for co-launches. Enter Pump Hackathon as the primary
+  go-to-market channel, with PumpST as the flagship product under LQST.
+  Two tokens will be issued: LQST (platform token) and PumpST (flagship
+  product). Operations will run under the NFTST model.
 
 
 
@@ -65,12 +70,19 @@ distribution: |
 # "landing" is special — it maps to / (the root page).
 pages:
   - name: landing
-    purpose: "TODO: What does the landing page do? (e.g., Explain value prop, collect signups)"
-  # Add more pages below. Examples:
-  # - name: dashboard
-  #   purpose: Show main app view after login
-  # - name: settings
-  #   purpose: Account and billing settings
+    purpose: Homepage introducing the LQST protocol rules, ST mechanism, LP-backed yield model, and entry point to the app
+
+  - name: create
+    purpose: Deploy a ST token smart contract (fee required) — auto-fetch token data from CoinGecko or Pump.fun, user fills in name and description
+
+  - name: explore
+    purpose: List all created ST tokens with price, market cap, and 24h volume
+
+  - name: token/[id]
+    purpose: Individual token page — price chart, buy/sell interface, token description and treasury asset data
+
+  - name: revenue
+    purpose: LQST platform revenue dashboard — protocol fees, buyback history, and treasury info
 
 
 
@@ -80,16 +92,18 @@ pages:
 # --- Features ---
 # List up to ~5 features. Each is a short description of one capability.
 features:
-  - TODO — First feature
-  # - Second feature
-  # - Third feature
+  - High-fee DEX — generate significant protocol revenue through trading fees
+  - Treasury LP creation — build protocol-owned liquidity via ORCA or JUP aggregator DEX integration
+  - Fee distribution and buyback system — distribute protocol fees and execute token buybacks
+  - Built-in Pump-style trading interface — native token launch and swap UI
+  - Universal token support — compatible with mainstream and MEME tokens
 
 
 
 # --- Success Metric ---
-primary_metric: "TODO: What single metric determines if this experiment succeeds?"
-target_value: "TODO: What number means success? (e.g., 50 signups, 10 paid users, $500 MRR)"
-measurement_window: "TODO: How long to run? (e.g., 2 weeks, 30 days)"
+primary_metric: "Total trading volume on the platform"
+target_value: "$500,000 trading volume"
+measurement_window: "30 days"
 
 # --- Stack ---
 # Each value maps to a stack file at .claude/stacks/<category>/<value>.md
