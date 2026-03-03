@@ -360,23 +360,23 @@ export default function TokenDetailPage() {
                   </div>
 
                   {/* Balance row */}
-                  {walletAddress && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">balance:</span>
-                      <span className="font-medium">
-                        {tradeDirection === "buy"
-                          ? selectedInputToken === "sol"
-                            ? `${solBalance.toFixed(6)} SOL`
-                            : `${baseTokenBalance.toFixed(4)} ${token.baseTokenSymbol}`
-                          : `— ${token.name}`}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>balance</span>
+                    <span className="text-foreground font-medium tabular-nums">
+                      {!walletAddress
+                        ? "—"
+                        : tradeDirection === "buy"
+                        ? selectedInputToken === "sol"
+                          ? `${solBalance.toFixed(6)} SOL`
+                          : `${baseTokenBalance.toFixed(4)} ${token.baseTokenSymbol}`
+                        : `— ${token.name}`}
+                    </span>
+                  </div>
 
                   {/* Trade form */}
-                  <form onSubmit={handleTrade} className="space-y-3">
+                  <form onSubmit={handleTrade} className="space-y-2">
                     {/* Amount input + token selector */}
-                    <div className="flex items-stretch rounded-xl border bg-muted/20 overflow-hidden focus-within:ring-1 focus-within:ring-ring min-h-[56px]">
+                    <div className="flex items-stretch h-14 rounded-2xl border border-white/10 bg-muted/20 overflow-hidden focus-within:ring-2 focus-within:ring-ring/40 transition-shadow">
                       <Input
                         id="trade-amount"
                         type="number"
@@ -385,7 +385,7 @@ export default function TokenDetailPage() {
                         placeholder="0.00"
                         value={tradeAmount}
                         onChange={(e) => setTradeAmount(e.target.value)}
-                        className="border-0 bg-transparent text-lg flex-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+                        className="border-0 bg-transparent text-xl font-medium flex-1 h-full pl-4 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 placeholder:text-muted-foreground/40"
                       />
                       {tradeDirection === "buy" ? (
                         <Select
@@ -395,24 +395,27 @@ export default function TokenDetailPage() {
                             setTradeAmount("");
                           }}
                         >
-                          <SelectTrigger className="border-0 border-l rounded-none bg-transparent dark:bg-transparent dark:hover:bg-transparent shadow-none !h-full w-36 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:border-0 px-3">
+                          <SelectTrigger
+                            className="border-0 border-l border-white/10 rounded-none shadow-none !h-full w-36 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:border-0 px-3"
+                            style={{ background: "transparent" }}
+                          >
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               {selectedInputToken === "sol" ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
                                   alt="SOL"
-                                  className="w-5 h-5 rounded-full shrink-0"
+                                  className="w-6 h-6 rounded-full shrink-0"
                                 />
                               ) : token.baseTokenLogo ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={token.baseTokenLogo}
                                   alt={token.baseTokenSymbol}
-                                  className="w-5 h-5 rounded-full shrink-0"
+                                  className="w-6 h-6 rounded-full shrink-0"
                                 />
                               ) : (
-                                <div className="w-5 h-5 rounded-full bg-muted shrink-0" />
+                                <div className="w-6 h-6 rounded-full bg-muted shrink-0" />
                               )}
                               <SelectValue />
                             </div>
@@ -423,7 +426,7 @@ export default function TokenDetailPage() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <div className="px-4 border-l flex items-center text-sm font-semibold text-muted-foreground shrink-0">
+                        <div className="px-4 border-l border-white/10 flex items-center text-sm font-semibold text-muted-foreground shrink-0">
                           {token.name}
                         </div>
                       )}
@@ -431,13 +434,13 @@ export default function TokenDetailPage() {
 
                     {/* Quick amount chips */}
                     {tradeDirection === "buy" && selectedInputToken === "sol" && (
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 pt-0.5">
                         {(["Reset", "0.1", "0.5", "1"] as const).map((v) => (
                           <button
                             key={v}
                             type="button"
                             onClick={() => setTradeAmount(v === "Reset" ? "" : v)}
-                            className="flex-1 py-1.5 rounded-full border text-xs hover:bg-muted/60 transition-colors"
+                            className="flex-1 py-1.5 rounded-lg border border-white/10 text-xs text-muted-foreground hover:text-foreground hover:border-white/25 hover:bg-muted/40 transition-all"
                           >
                             {v === "Reset" ? "Reset" : `${v} SOL`}
                           </button>
@@ -445,7 +448,7 @@ export default function TokenDetailPage() {
                         <button
                           type="button"
                           onClick={() => setTradeAmount(solBalance > 0 ? solBalance.toFixed(6) : "")}
-                          className="flex-1 py-1.5 rounded-full border text-xs hover:bg-muted/60 transition-colors"
+                          className="flex-1 py-1.5 rounded-lg border border-white/10 text-xs text-muted-foreground hover:text-foreground hover:border-white/25 hover:bg-muted/40 transition-all"
                         >
                           Max
                         </button>
@@ -453,7 +456,7 @@ export default function TokenDetailPage() {
                     )}
 
                     {tradeDirection === "buy" && selectedInputToken === "base" && (
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 pt-0.5">
                         {([25, 50, 75, 100] as const).map((pct) => (
                           <button
                             key={pct}
@@ -465,7 +468,7 @@ export default function TokenDetailPage() {
                                   : ""
                               )
                             }
-                            className="flex-1 py-1.5 rounded-full border text-xs hover:bg-muted/60 transition-colors"
+                            className="flex-1 py-1.5 rounded-lg border border-white/10 text-xs text-muted-foreground hover:text-foreground hover:border-white/25 hover:bg-muted/40 transition-all"
                           >
                             {pct === 100 ? "Max" : `${pct}%`}
                           </button>
@@ -475,23 +478,24 @@ export default function TokenDetailPage() {
 
                     {/* Estimated receive */}
                     {inputAmount > 0 && (
-                      <p className="text-base text-muted-foreground">
-                        ≈{" "}
-                        <span className="text-foreground font-medium">
+                      <div className="flex items-center justify-between text-sm rounded-xl bg-muted/10 border border-white/5 px-4 py-2.5">
+                        <span className="text-muted-foreground">You receive</span>
+                        <span className="font-semibold tabular-nums">
+                          ≈{" "}
                           {estimatedOut >= 1_000_000
                             ? `${(estimatedOut / 1_000_000).toFixed(4)}M`
                             : estimatedOut >= 1_000
                             ? `${(estimatedOut / 1_000).toFixed(4)}K`
-                            : estimatedOut.toFixed(4)}
-                        </span>{" "}
-                        {estimatedLabel}
-                      </p>
+                            : estimatedOut.toFixed(4)}{" "}
+                          {estimatedLabel}
+                        </span>
+                      </div>
                     )}
 
                     <Button
                       type="submit"
                       disabled={trading}
-                      className="w-full h-12 text-base font-semibold"
+                      className="w-full h-12 text-base font-semibold rounded-2xl mt-1"
                       variant={tradeDirection === "sell" ? "destructive" : "default"}
                     >
                       {trading
