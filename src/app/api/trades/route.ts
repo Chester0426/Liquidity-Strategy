@@ -5,6 +5,7 @@ import { z } from "zod";
 // TODO: Add production rate limiting (e.g., Upstash Redis)
 
 const bodySchema = z.object({
+  walletAddress: z.string().min(32).max(44),
   stTokenId: z.string().uuid(),
   direction: z.enum(["buy", "sell"]),
   solAmount: z.number().positive().max(10_000).optional(),
@@ -14,8 +15,6 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const parse = bodySchema.safeParse(body);
@@ -23,7 +22,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parse.error.issues[0].message }, { status: 400 });
     }
 
-    const { stTokenId, direction, solAmount, tokenAmount } = parse.data;
+    const { walletAddress, stTokenId, direction, solAmount, tokenAmount } = parse.data;
 
     if (direction === "buy" && !solAmount) {
       return NextResponse.json({ error: "solAmount required for buy" }, { status: 400 });
@@ -81,7 +80,7 @@ export async function POST(request: Request) {
       .from("trades")
       .insert({
         st_token_id: stTokenId,
-        trader_address: user.id,
+        trader_address: walletAddress,
         direction,
         sol_amount: tradeSOL,
         token_amount: tokenAmount ?? tradeSOL / 0.00000001,
@@ -97,18 +96,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: tradeError.message }, { status: 500 });
     }
 
-    // Add fees to LP position (simplified stub)
+    // Add fees to LP position (stub — accumulate into base_token_amount)
     if (feeToLp > 0) {
       const { data: lp } = await supabase
         .from("lp_positions")
-        .select("id, sol_amount")
+        .select("id, base_token_amount")
         .eq("st_token_id", stTokenId)
         .single();
 
       if (lp) {
         await supabase
           .from("lp_positions")
-          .update({ sol_amount: lp.sol_amount + feeToLp })
+          .update({ base_token_amount: lp.base_token_amount + feeToLp })
           .eq("id", lp.id);
       }
     }

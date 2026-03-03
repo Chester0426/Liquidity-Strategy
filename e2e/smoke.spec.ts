@@ -30,9 +30,7 @@ test.describe.serial("Smoke tests — page loads", () => {
     await checkNoHorizontalOverflow(page);
   });
 
-  test("login page loads", async ({ page }) => {
-    await page.goto("/login");
-    await expect(page).toHaveTitle(/.+/);
-    await checkNoHorizontalOverflow(page);
-  });
+  // Login/signup pages redirect to / — wallet auth replaces email auth.
+  // Wallet connection requires a browser extension (Phantom/Solflare) and
+  // cannot be automated in E2E tests.
 });
