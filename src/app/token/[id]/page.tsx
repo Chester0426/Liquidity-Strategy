@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const SPL_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const RPC_ENDPOINTS = [
@@ -344,46 +351,6 @@ export default function TokenDetailPage() {
                     </button>
                   </div>
 
-                  {/* Pay with selector — Buy mode only */}
-                  {tradeDirection === "buy" && (
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-2">Pay with</p>
-                      {!walletAddress ? (
-                        <p className="text-sm text-muted-foreground">
-                          Connect wallet to see available tokens
-                        </p>
-                      ) : loadingTokens ? (
-                        <p className="text-sm text-muted-foreground">Loading wallet...</p>
-                      ) : walletTokens.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No tokens found in wallet</p>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {walletTokens.map((t) => (
-                            <button
-                              key={t.mint}
-                              onClick={() => setPayWithMint(t.mint)}
-                              className={`px-3 py-1.5 rounded-lg border text-sm flex items-center gap-1.5 transition-colors ${
-                                payWithMint === t.mint
-                                  ? "border-primary bg-primary/10"
-                                  : "border-muted hover:border-primary/50"
-                              }`}
-                            >
-                              <span className="font-medium">{t.symbol}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {t.balance.toFixed(4)}
-                              </span>
-                              {t.isDirect ? (
-                                <span className="text-xs text-green-500 font-medium">Direct</span>
-                              ) : (
-                                <span className="text-xs text-orange-400">Via Jupiter</span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {/* Tax Rate Info */}
                   <div className="p-3 bg-muted/50 rounded-lg text-sm">
                     <div className="flex justify-between">
@@ -415,22 +382,60 @@ export default function TokenDetailPage() {
                   <form onSubmit={handleTrade} className="space-y-3">
                     <div>
                       <Label htmlFor="trade-amount">
-                        {tradeDirection === "buy"
-                          ? selectedToken
-                            ? `${selectedToken.symbol} to spend`
-                            : "Amount to spend"
-                          : `${token.name} to sell`}
+                        {tradeDirection === "buy" ? "You pay" : `${token.name} to sell`}
                       </Label>
-                      <Input
-                        id="trade-amount"
-                        type="number"
-                        step="0.001"
-                        min="0.001"
-                        placeholder="0.00"
-                        value={tradeAmount}
-                        onChange={(e) => setTradeAmount(e.target.value)}
-                        className="text-base h-11 mt-1"
-                      />
+                      {/* Buy: combined token dropdown + amount input */}
+                      {tradeDirection === "buy" ? (
+                        <div className="flex mt-1 h-11">
+                          {/* Token selector dropdown */}
+                          <Select
+                            value={payWithMint}
+                            onValueChange={setPayWithMint}
+                            disabled={!walletAddress || loadingTokens}
+                          >
+                            <SelectTrigger className="w-[140px] rounded-r-none border-r-0 h-full text-sm shrink-0">
+                              <SelectValue placeholder={loadingTokens ? "Loading…" : "Token"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {walletTokens.length === 0 ? (
+                                <SelectItem value="sol" disabled>
+                                  {!walletAddress ? "Connect wallet" : "No tokens"}
+                                </SelectItem>
+                              ) : (
+                                walletTokens.map((t) => (
+                                  <SelectItem key={t.mint} value={t.mint}>
+                                    <span className="font-medium">{t.symbol}</span>
+                                    <span className="text-muted-foreground ml-1.5 text-xs">
+                                      {t.balance.toFixed(4)}
+                                    </span>
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            id="trade-amount"
+                            type="number"
+                            step="0.001"
+                            min="0.001"
+                            placeholder="0.00"
+                            value={tradeAmount}
+                            onChange={(e) => setTradeAmount(e.target.value)}
+                            className="text-base h-full rounded-l-none flex-1"
+                          />
+                        </div>
+                      ) : (
+                        <Input
+                          id="trade-amount"
+                          type="number"
+                          step="0.001"
+                          min="0.001"
+                          placeholder="0.00"
+                          value={tradeAmount}
+                          onChange={(e) => setTradeAmount(e.target.value)}
+                          className="text-base h-11 mt-1"
+                        />
+                      )}
                     </div>
                     <Button
                       type="submit"
