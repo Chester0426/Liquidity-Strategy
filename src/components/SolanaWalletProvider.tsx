@@ -10,7 +10,10 @@ import {
 } from "@solana/wallet-adapter-wallets";
 
 export function SolanaWalletProvider({ children }: { children: React.ReactNode }) {
-  const endpoint = useMemo(() => clusterApiUrl("mainnet-beta"), []);
+  const endpoint = useMemo(
+    () => process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? clusterApiUrl("mainnet-beta"),
+    []
+  );
 
   const wallets = useMemo(
     () => [
