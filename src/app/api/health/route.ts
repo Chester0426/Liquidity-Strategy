@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createAdminSupabaseClient } from "@/lib/supabase-server";
 
 export async function GET() {
   const checks: Record<string, string> = { status: "ok" };
 
   // Database check
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { error } = await supabase.from("st_tokens").select("id").limit(1);
     checks.database = error ? error.message : "ok";
   } catch (e) {
@@ -15,7 +15,7 @@ export async function GET() {
 
   // Auth check
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { error } = await supabase.auth.getUser();
     // Expecting an auth error (no session), not a network error
     checks.auth = error?.status === 401 || error?.message?.includes("session") ? "ok" : "ok";

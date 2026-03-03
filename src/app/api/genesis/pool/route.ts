@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createAdminSupabaseClient } from "@/lib/supabase-server";
 import { z } from "zod";
 
 const querySchema = z.object({ symbol: z.string().min(1).max(20) });
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const symbol = parse.data.symbol.toUpperCase();
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     const { data, error } = await supabase

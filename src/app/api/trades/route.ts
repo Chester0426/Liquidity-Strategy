@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createAdminSupabaseClient } from "@/lib/supabase-server";
 import { z } from "zod";
 
 // TODO: Add production rate limiting (e.g., Upstash Redis)
@@ -14,7 +14,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
 
     const body = await request.json();
     const parse = bodySchema.safeParse(body);
