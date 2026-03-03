@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,9 @@ interface GenesisPool {
 }
 
 export default function CreatePage() {
+  const { publicKey } = useWallet();
+  const walletAddress = publicKey?.toString() ?? null;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<TokenSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -75,6 +79,7 @@ export default function CreatePage() {
 
   async function handleContribute(e: React.FormEvent) {
     e.preventDefault();
+    if (!walletAddress) { setMessage("Please connect your wallet first."); return; }
     const amount = parseFloat(contributeAmount);
     if (!amount || amount <= 0) return;
     setContributing(true);
@@ -84,6 +89,7 @@ export default function CreatePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          walletAddress,
           symbol: selectedToken!.symbol,
           tokenName: selectedToken!.name,
           tokenLogo: selectedToken!.logo,
@@ -110,14 +116,14 @@ export default function CreatePage() {
   }
 
   async function handleRefund() {
-    if (!existingPool) return;
+    if (!existingPool || !walletAddress) return;
     setRefunding(true);
     setMessage("");
     try {
       const res = await fetch("/api/genesis/refund", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ poolId: existingPool.id }),
+        body: JSON.stringify({ walletAddress, poolId: existingPool.id }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -136,6 +142,23 @@ export default function CreatePage() {
   const progressPct = existingPool
     ? Math.min((existingPool.genesisSOLRaised / existingPool.genesisSOLTarget) * 100, 100)
     : 0;
+
+  if (!walletAddress) {
+    return (
+      <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
+        <h1 className="text-2xl font-semibold mb-2">Create ST Token</h1>
+        <Card className="mt-6">
+          <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+            <p className="text-lg font-medium">Connect your wallet to continue</p>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              A Solana wallet is required to create or join a genesis pool. Click{" "}
+              <span className="font-medium text-primary">Connect Wallet</span> in the navigation bar.
+            </p>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8">

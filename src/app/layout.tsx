@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { NavBar } from "@/components/nav-bar";
 import { RetainTracker } from "@/components/RetainTracker";
+import { SolanaWalletProvider } from "@/components/SolanaWalletProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -20,9 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} dark`}>
       <body>
-        <NavBar />
-        <RetainTracker />
-        {children}
+        <SolanaWalletProvider>
+          <NavBar />
+          <RetainTracker />
+          {children}
+        </SolanaWalletProvider>
       </body>
     </html>
   );

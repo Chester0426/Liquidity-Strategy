@@ -4,13 +4,14 @@ import { z } from "zod";
 
 // TODO: Add production rate limiting (e.g., Upstash Redis)
 
-const bodySchema = z.object({ poolId: z.string().uuid() });
+const bodySchema = z.object({
+  walletAddress: z.string().min(32).max(44),
+  poolId: z.string().uuid(),
+});
 
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const parse = bodySchema.safeParse(body);
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parse.error.issues[0].message }, { status: 400 });
     }
 
-    const { poolId } = parse.data;
+    const { walletAddress, poolId } = parse.data;
 
     // Verify pool is still collecting
     const { data: token, error: tokenError } = await supabase
@@ -38,12 +39,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get user's unrefunded contributions
+    // Get wallet's unrefunded contributions
     const { data: contributions, error: contribError } = await supabase
       .from("genesis_contributions")
       .select("id, sol_amount")
       .eq("st_token_id", poolId)
-      .eq("contributor_address", user.id)
+      .eq("contributor_address", walletAddress)
       .is("refunded_at", null);
 
     if (contribError) {

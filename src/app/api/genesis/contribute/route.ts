@@ -5,6 +5,7 @@ import { z } from "zod";
 // TODO: Add production rate limiting (e.g., Upstash Redis)
 
 const bodySchema = z.object({
+  walletAddress: z.string().min(32).max(44),
   symbol: z.string().min(1).max(20),
   tokenName: z.string().min(1).max(100),
   tokenLogo: z.string().url().optional(),
@@ -18,8 +19,6 @@ const CREATOR_ALLOCATION_PCT = 0.2; // 20% to genesis contributors
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const parse = bodySchema.safeParse(body);
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parse.error.issues[0].message }, { status: 400 });
     }
 
-    const { symbol, tokenName, tokenLogo, solAmount } = parse.data;
+    const { walletAddress, symbol, tokenName, tokenLogo, solAmount } = parse.data;
     const symbolUpper = symbol.toUpperCase();
     const stName = `${symbolUpper}ST`;
 
@@ -58,7 +57,7 @@ export async function POST(request: Request) {
           base_token_logo: tokenLogo ?? null,
           name: stName,
           description: null, // TODO: auto-fill from CoinGecko/Pump.fun in future
-          creator_address: user.id,
+          creator_address: walletAddress,
           total_supply: TOTAL_SUPPLY,
           genesis_sol_target: GENESIS_SOL_TARGET,
           genesis_sol_raised: 0,
@@ -84,7 +83,7 @@ export async function POST(request: Request) {
       .from("genesis_contributions")
       .insert({
         st_token_id: tokenId,
-        contributor_address: user.id,
+        contributor_address: walletAddress,
         sol_amount: solAmount,
         token_allocation: 0, // calculated at launch
       });
@@ -176,7 +175,7 @@ export async function POST(request: Request) {
       .from("genesis_contributions")
       .select("sol_amount")
       .eq("st_token_id", tokenId)
-      .eq("contributor_address", user.id)
+      .eq("contributor_address", walletAddress)
       .is("refunded_at", null);
 
     const myTotal = (myContrib ?? []).reduce((s, c) => s + c.sol_amount, 0);

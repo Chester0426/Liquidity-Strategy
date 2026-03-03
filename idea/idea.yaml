@@ -92,6 +92,7 @@ pages:
 # --- Features ---
 # List up to ~5 features. Each is a short description of one capability.
 features:
+  - Solana wallet connection — connect Phantom, Solflare, or Backpack to authenticate and interact with the protocol
   - High-fee DEX — generate significant protocol revenue through trading fees
   - Treasury LP creation — build protocol-owned liquidity via ORCA or JUP aggregator DEX integration
   - Fee distribution and buyback system — distribute protocol fees and execute token buybacks
