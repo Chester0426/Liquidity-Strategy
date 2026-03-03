@@ -2,15 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+const SPL_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const RPC_ENDPOINTS = [
+  process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
+  "https://rpc.ankr.com/solana",
+  "https://api.mainnet-beta.solana.com",
+].filter(Boolean) as string[];
+
+async function solanaRpc(method: string, params: unknown[]) {
+  for (const rpc of RPC_ENDPOINTS) {
+    try {
+      const res = await fetch(rpc, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.error) continue;
+      return data.result;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
 
 interface TokenDetail {
   id: string;
@@ -50,7 +74,6 @@ export default function TokenDetailPage() {
   const [tradeMsg, setTradeMsg] = useState("");
 
   const { publicKey } = useWallet();
-  const { connection } = useConnection();
   const walletAddress = publicKey?.toString() ?? null;
 
   const [walletTokens, setWalletTokens] = useState<WalletToken[]>([]);
@@ -67,26 +90,32 @@ export default function TokenDetailPage() {
 
   // Fetch wallet token balances when in buy mode and wallet connected
   useEffect(() => {
-    if (!publicKey || !connection || tradeDirection !== "buy" || !token) return;
+    if (!publicKey || tradeDirection !== "buy" || !token) return;
+
+    const address = publicKey.toString();
 
     async function fetchWalletTokens() {
       setLoadingTokens(true);
       try {
-        // 1. SOL balance
-        const solBalance = await connection.getBalance(publicKey!);
-        const solUi = solBalance / 1e9;
+        // 1. SOL balance via direct JSON-RPC
+        const balResult = await solanaRpc("getBalance", [address]);
+        const solUi = (balResult?.value ?? 0) / 1e9;
 
-        // 2. SPL tokens
-        const accounts = await connection.getParsedTokenAccountsByOwner(publicKey!, {
-          programId: TOKEN_PROGRAM_ID,
-        });
+        // 2. SPL token accounts via direct JSON-RPC
+        const splResult = await solanaRpc("getParsedTokenAccountsByOwner", [
+          address,
+          { programId: SPL_TOKEN_PROGRAM },
+          { encoding: "jsonParsed" },
+        ]);
 
-        const spls = accounts.value
-          .map((a) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const spls: { mint: string; balance: number }[] = (splResult?.value ?? [])
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((a: any) => ({
             mint: a.account.data.parsed.info.mint as string,
             balance: a.account.data.parsed.info.tokenAmount.uiAmount as number,
           }))
-          .filter((t) => t.balance > 0);
+          .filter((t: { mint: string; balance: number }) => t.balance > 0);
 
         // 3. Fetch symbols from Jupiter token list
         let symbolMap: Record<string, string> = {};
@@ -96,12 +125,10 @@ export default function TokenDetailPage() {
             const res = await fetch(`https://lite-api.jup.ag/tokens/v1/mints?mints=${mints}`);
             if (res.ok) {
               const data: Array<{ address: string; symbol: string }> = await res.json();
-              data.forEach((t) => {
-                symbolMap[t.address] = t.symbol;
-              });
+              data.forEach((t) => { symbolMap[t.address] = t.symbol; });
             }
           } catch {
-            // Jupiter API unavailable — use fallback labels
+            // Jupiter unavailable — use short mint labels
           }
         }
 
@@ -112,18 +139,14 @@ export default function TokenDetailPage() {
           ...spls
             .map((t) => ({
               mint: t.mint,
-              symbol:
-                symbolMap[t.mint] ??
-                t.mint.slice(0, 4) + "..." + t.mint.slice(-4),
+              symbol: symbolMap[t.mint] ?? t.mint.slice(0, 4) + "…" + t.mint.slice(-4),
               balance: t.balance,
-              isDirect:
-                (symbolMap[t.mint] ?? "").toUpperCase() === baseSymbol,
+              isDirect: (symbolMap[t.mint] ?? "").toUpperCase() === baseSymbol,
             }))
             .sort((a, b) => (b.isDirect ? 1 : 0) - (a.isDirect ? 1 : 0)),
         ];
 
         setWalletTokens(tokens);
-        // Auto-select base token if available, else SOL
         const direct = tokens.find((t) => t.isDirect);
         setPayWithMint(direct ? direct.mint : "sol");
       } catch {
@@ -134,7 +157,7 @@ export default function TokenDetailPage() {
     }
 
     fetchWalletTokens();
-  }, [publicKey, connection, tradeDirection, token]);
+  }, [publicKey, tradeDirection, token]);
 
   async function handleTrade(e: React.FormEvent) {
     e.preventDefault();
