@@ -11,12 +11,12 @@ export async function GET(
   try {
     const supabase = createAdminSupabaseClient();
 
-    // Look up by base_token_symbol (lowercase slug) or by UUID
-    const { data, error } = await supabase
-      .from("st_tokens")
-      .select("*")
-      .or(`base_token_symbol.ilike.${id},id.eq.${id}`)
-      .single();
+    // Look up by UUID if id looks like a UUID, otherwise by base_token_symbol
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const query = supabase.from("st_tokens").select("*");
+    const { data, error } = isUuid
+      ? await query.eq("id", id).single()
+      : await query.ilike("base_token_symbol", id).single();
 
     if (error || !data) {
       return NextResponse.json({ token: null }, { status: 404 });
