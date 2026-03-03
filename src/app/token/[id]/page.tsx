@@ -395,12 +395,55 @@ export default function TokenDetailPage() {
                             setTradeAmount("");
                           }}
                         >
-                          <SelectTrigger className="border-0 border-l rounded-none bg-transparent h-full w-28 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0">
-                            <SelectValue />
+                          <SelectTrigger className="border-0 border-l rounded-none bg-transparent h-full w-36 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0">
+                            <div className="flex items-center gap-2 mr-1">
+                              {selectedInputToken === "sol" ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
+                                  alt="SOL"
+                                  className="w-6 h-6 rounded-full shrink-0"
+                                />
+                              ) : token.baseTokenLogo ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={token.baseTokenLogo}
+                                  alt={token.baseTokenSymbol}
+                                  className="w-6 h-6 rounded-full shrink-0"
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-muted shrink-0" />
+                              )}
+                              <span>{selectedInputToken === "sol" ? "SOL" : token.baseTokenSymbol}</span>
+                            </div>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="sol">SOL</SelectItem>
-                            <SelectItem value="base">{token.baseTokenSymbol}</SelectItem>
+                            <SelectItem value="sol">
+                              <div className="flex items-center gap-2">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
+                                  alt="SOL"
+                                  className="w-4 h-4 rounded-full"
+                                />
+                                SOL
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="base">
+                              <div className="flex items-center gap-2">
+                                {token.baseTokenLogo ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={token.baseTokenLogo}
+                                    alt={token.baseTokenSymbol}
+                                    className="w-4 h-4 rounded-full"
+                                  />
+                                ) : (
+                                  <div className="w-4 h-4 rounded-full bg-muted" />
+                                )}
+                                {token.baseTokenSymbol}
+                              </div>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (
