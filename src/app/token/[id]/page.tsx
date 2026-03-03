@@ -56,6 +56,8 @@ export default function TokenDetailPage() {
   const [walletTokens, setWalletTokens] = useState<WalletToken[]>([]);
   const [payWithMint, setPayWithMint] = useState<string>("sol");
   const [loadingTokens, setLoadingTokens] = useState(false);
+  const [tokenFetchError, setTokenFetchError] = useState<string | null>(null);
+  const [fetchTrigger, setFetchTrigger] = useState(0);
 
   useEffect(() => {
     fetch(`/api/tokens/${tokenId}`)
@@ -71,6 +73,7 @@ export default function TokenDetailPage() {
 
     async function fetchWalletTokens() {
       setLoadingTokens(true);
+      setTokenFetchError(null);
       try {
         // 1. SOL balance
         const solBalance = await connection.getBalance(publicKey!);
@@ -126,8 +129,11 @@ export default function TokenDetailPage() {
         // Auto-select base token if available, else SOL
         const direct = tokens.find((t) => t.isDirect);
         setPayWithMint(direct ? direct.mint : "sol");
-      } catch {
-        // Wallet read error — show empty state
+      } catch (err) {
+        console.error("Wallet token fetch error:", err);
+        setTokenFetchError(
+          err instanceof Error ? err.message : "Failed to read wallet"
+        );
         setWalletTokens([]);
       } finally {
         setLoadingTokens(false);
@@ -135,7 +141,7 @@ export default function TokenDetailPage() {
     }
 
     fetchWalletTokens();
-  }, [publicKey, connection, tradeDirection, token]);
+  }, [publicKey, connection, tradeDirection, token, fetchTrigger]);
 
   async function handleTrade(e: React.FormEvent) {
     e.preventDefault();
@@ -332,6 +338,21 @@ export default function TokenDetailPage() {
                         </p>
                       ) : loadingTokens ? (
                         <p className="text-sm text-muted-foreground">Loading wallet...</p>
+                      ) : tokenFetchError ? (
+                        <div className="space-y-1">
+                          <p className="text-xs text-destructive">
+                            Failed to read wallet: {tokenFetchError}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Tip: set <code className="bg-muted px-1 rounded">NEXT_PUBLIC_SOLANA_RPC_URL</code> to a Helius/QuickNode endpoint for better reliability.
+                          </p>
+                          <button
+                            onClick={() => setFetchTrigger((n) => n + 1)}
+                            className="text-xs text-primary underline underline-offset-2"
+                          >
+                            Retry
+                          </button>
+                        </div>
                       ) : walletTokens.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No tokens found in wallet</p>
                       ) : (
