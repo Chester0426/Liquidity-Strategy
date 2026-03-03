@@ -210,6 +210,29 @@ export default function TokenDetailPage() {
   const isGenesis = token.genesisStatus === "launched";
   const taxRate = token.currentTaxRate ?? (isGenesis ? Math.max(10, 95 - (token.minutesSinceLaunch ?? 0)) : 10);
 
+  // Estimate output amount using stub AMM (constant-product spot price)
+  function estimateReceive(inputAmount: number): number {
+    if (inputAmount <= 0 || !token) return 0;
+    const lpBase = token.lpBaseToken ?? 10_000;      // base tokens in LP
+    const lpST   = token.lpTokens  ?? 800_000_000;   // ST tokens in LP
+    const taxMul = 1 - taxRate / 100;
+    if (tradeDirection === "buy") {
+      // SOL → base token (stub: 1 SOL = 1000 base units) → ST via AMM
+      const baseIn = selectedInputToken === "sol" ? inputAmount * 1_000 : inputAmount;
+      const afterTax = baseIn * taxMul;
+      // constant-product: Δy = y * Δx / (x + Δx)
+      return (lpST * afterTax) / (lpBase + afterTax);
+    } else {
+      // ST → base token (sell direction)
+      const afterTax = inputAmount * taxMul;
+      return (lpBase * afterTax) / (lpST + afterTax);
+    }
+  }
+
+  const inputAmount = parseFloat(tradeAmount) || 0;
+  const estimatedOut = estimateReceive(inputAmount);
+  const estimatedLabel = tradeDirection === "buy" ? token.name : token.baseTokenSymbol;
+
   return (
     <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
       {/* Header */}
@@ -350,18 +373,6 @@ export default function TokenDetailPage() {
                     </div>
                   )}
 
-                  {/* Tax info row */}
-                  <div className="flex justify-between text-xs text-muted-foreground px-0.5">
-                    <span>
-                      Tax:{" "}
-                      <span className="text-amber-500 font-medium">{taxRate}%</span>
-                      {isGenesis && (
-                        <span className="ml-1">↓ 1%/min → 10%</span>
-                      )}
-                    </span>
-                    <span>{isGenesis ? "100% → LP" : "8% LP + 2% LQST"}</span>
-                  </div>
-
                   {/* Trade form */}
                   <form onSubmit={handleTrade} className="space-y-3">
                     {/* Amount input + token selector */}
@@ -384,7 +395,7 @@ export default function TokenDetailPage() {
                             setTradeAmount("");
                           }}
                         >
-                          <SelectTrigger className="border-0 bg-transparent h-14 w-[120px] shrink-0 text-sm font-semibold focus:ring-0 rounded-none">
+                          <SelectTrigger className="border-0 border-l rounded-none bg-transparent h-14 w-28 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -393,7 +404,7 @@ export default function TokenDetailPage() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <div className="h-14 px-4 flex items-center text-sm font-semibold text-muted-foreground shrink-0">
+                        <div className="h-14 px-4 border-l flex items-center text-sm font-semibold text-muted-foreground shrink-0">
                           {token.name}
                         </div>
                       )}
@@ -443,6 +454,21 @@ export default function TokenDetailPage() {
                       </div>
                     )}
 
+                    {/* Estimated receive */}
+                    {inputAmount > 0 && (
+                      <p className="text-base text-muted-foreground">
+                        ≈{" "}
+                        <span className="text-foreground font-medium">
+                          {estimatedOut >= 1_000_000
+                            ? `${(estimatedOut / 1_000_000).toFixed(4)}M`
+                            : estimatedOut >= 1_000
+                            ? `${(estimatedOut / 1_000).toFixed(4)}K`
+                            : estimatedOut.toFixed(4)}
+                        </span>{" "}
+                        {estimatedLabel}
+                      </p>
+                    )}
+
                     <Button
                       type="submit"
                       disabled={trading}
@@ -469,9 +495,6 @@ export default function TokenDetailPage() {
                     </p>
                   )}
 
-                  <p className="text-xs text-muted-foreground text-center">
-                    Stub: on-chain execution not yet implemented.
-                  </p>
                 </>
               )}
             </CardContent>
