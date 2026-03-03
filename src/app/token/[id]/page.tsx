@@ -395,7 +395,7 @@ export default function TokenDetailPage() {
                             setTradeAmount("");
                           }}
                         >
-                          <SelectTrigger className="border-0 border-l rounded-none bg-muted/20 h-full w-28 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0">
+                          <SelectTrigger className="border-0 border-l rounded-none bg-transparent h-full w-28 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
