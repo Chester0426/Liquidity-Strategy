@@ -385,7 +385,8 @@ export default function TokenDetailPage() {
                         placeholder="0.00"
                         value={tradeAmount}
                         onChange={(e) => setTradeAmount(e.target.value)}
-                        className="border-0 bg-transparent text-xl font-medium flex-1 h-full pl-4 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 placeholder:text-muted-foreground/40"
+                        className="border-0 shadow-none text-xl font-medium flex-1 h-full pl-4 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 placeholder:text-muted-foreground/40"
+                        style={{ background: "transparent" }}
                       />
                       {tradeDirection === "buy" ? (
                         <Select
@@ -396,7 +397,7 @@ export default function TokenDetailPage() {
                           }}
                         >
                           <SelectTrigger
-                            className="border-0 border-l border-white/10 rounded-none shadow-none !h-full w-36 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:border-0 px-3"
+                            className="border-0 rounded-none shadow-none !h-full w-36 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:border-0 px-3"
                             style={{ background: "transparent" }}
                           >
                             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -426,7 +427,7 @@ export default function TokenDetailPage() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <div className="px-4 border-l border-white/10 flex items-center text-sm font-semibold text-muted-foreground shrink-0">
+                        <div className="px-4 flex items-center text-sm font-semibold text-muted-foreground shrink-0">
                           {token.name}
                         </div>
                       )}
