@@ -364,8 +364,8 @@ export default function CreatePage() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
               <p>• Total supply: 1,000,000,000 {selectedToken.symbol}ST tokens</p>
-              <p>• At launch: 10 SOL + 800M tokens → permanent ORCA LP</p>
-              <p>• Contributors receive 200M tokens pro-rata by SOL amount</p>
+              <p>• At launch: 10 SOL buys {selectedToken.symbol} on market → {selectedToken.symbol} + 800M {selectedToken.symbol}ST → permanent ORCA LP</p>
+              <p>• Contributors receive 200M {selectedToken.symbol}ST pro-rata by SOL contributed</p>
               <p>• Genesis tax: 95% → 10% over 85 minutes (all fees → LP)</p>
               <p>• Stable tax: 8% → LP buybacks + 2% → LQST buyback</p>
             </CardContent>

@@ -132,12 +132,17 @@ export async function POST(request: Request) {
         .update({ genesis_status: "launched", launched_at: now })
         .eq("id", tokenId);
 
-      // Create protocol LP position (stub — no real ORCA call)
+      // Launch sequence (stub — no real Solana/ORCA calls):
+      // Step 1: Use 10 SOL to buy BASE_TOKEN on-market (e.g., buy PUMP via Raydium/ORCA)
+      // Step 2: Pair purchased BASE_TOKEN + 800M ST tokens → permanent ORCA LP
+      // In production: call ORCA SDK to swap SOL→BASE_TOKEN, then addLiquidity(BASE_TOKEN, ST)
+      const baseTokenAmountStub = GENESIS_SOL_TARGET * 1000; // stub: 1 SOL = 1000 base token units
+
       await supabase.from("lp_positions").insert({
         st_token_id: tokenId,
-        sol_amount: GENESIS_SOL_TARGET,
-        token_amount: TOTAL_SUPPLY * (1 - CREATOR_ALLOCATION_PCT), // 800M tokens
-        lp_token_address: `stub_lp_${tokenId}`, // placeholder — replace with real ORCA LP address
+        base_token_amount: baseTokenAmountStub,                      // BASE_TOKEN side of LP (e.g., PUMP)
+        token_amount: TOTAL_SUPPLY * (1 - CREATOR_ALLOCATION_PCT),  // 800M ST tokens (other side)
+        lp_token_address: `stub_lp_${tokenId}`,                     // placeholder — replace with ORCA LP address
         is_locked: true,
       });
 
