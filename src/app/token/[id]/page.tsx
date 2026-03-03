@@ -56,8 +56,6 @@ export default function TokenDetailPage() {
   const [walletTokens, setWalletTokens] = useState<WalletToken[]>([]);
   const [payWithMint, setPayWithMint] = useState<string>("sol");
   const [loadingTokens, setLoadingTokens] = useState(false);
-  const [tokenFetchError, setTokenFetchError] = useState<string | null>(null);
-  const [fetchTrigger, setFetchTrigger] = useState(0);
 
   useEffect(() => {
     fetch(`/api/tokens/${tokenId}`)
@@ -73,7 +71,6 @@ export default function TokenDetailPage() {
 
     async function fetchWalletTokens() {
       setLoadingTokens(true);
-      setTokenFetchError(null);
       try {
         // 1. SOL balance
         const solBalance = await connection.getBalance(publicKey!);
@@ -129,11 +126,7 @@ export default function TokenDetailPage() {
         // Auto-select base token if available, else SOL
         const direct = tokens.find((t) => t.isDirect);
         setPayWithMint(direct ? direct.mint : "sol");
-      } catch (err) {
-        console.error("Wallet token fetch error:", err);
-        setTokenFetchError(
-          err instanceof Error ? err.message : "Failed to read wallet"
-        );
+      } catch {
         setWalletTokens([]);
       } finally {
         setLoadingTokens(false);
@@ -141,7 +134,7 @@ export default function TokenDetailPage() {
     }
 
     fetchWalletTokens();
-  }, [publicKey, connection, tradeDirection, token, fetchTrigger]);
+  }, [publicKey, connection, tradeDirection, token]);
 
   async function handleTrade(e: React.FormEvent) {
     e.preventDefault();
@@ -258,10 +251,10 @@ export default function TokenDetailPage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  ORCA {token.baseTokenSymbol}/SOL LP 價值
+                  ORCA {token.baseTokenSymbol}/SOL LP Value
                 </span>
                 <span className="font-medium text-muted-foreground italic">
-                  — (需要鏈上數據)
+                  — (requires on-chain data)
                 </span>
               </div>
               <Separator />
@@ -272,15 +265,15 @@ export default function TokenDetailPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
                 >
-                  在 Solscan 查看 {token.name} LP 錢包 ↗
+                  View {token.name} LP wallet on Solscan ↗
                 </a>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  LP 錢包地址將在部署上鏈後顯示
+                  LP wallet address will be shown after on-chain deployment.
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                LP 永久鎖倉，協議自有流動性永不撤出。
+                LP is permanently locked — protocol-owned liquidity is never withdrawn.
               </p>
             </CardContent>
           </Card>
@@ -338,21 +331,6 @@ export default function TokenDetailPage() {
                         </p>
                       ) : loadingTokens ? (
                         <p className="text-sm text-muted-foreground">Loading wallet...</p>
-                      ) : tokenFetchError ? (
-                        <div className="space-y-1">
-                          <p className="text-xs text-destructive">
-                            Failed to read wallet: {tokenFetchError}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Tip: set <code className="bg-muted px-1 rounded">NEXT_PUBLIC_SOLANA_RPC_URL</code> to a Helius/QuickNode endpoint for better reliability.
-                          </p>
-                          <button
-                            onClick={() => setFetchTrigger((n) => n + 1)}
-                            className="text-xs text-primary underline underline-offset-2"
-                          >
-                            Retry
-                          </button>
-                        </div>
                       ) : walletTokens.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No tokens found in wallet</p>
                       ) : (
