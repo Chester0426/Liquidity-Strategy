@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createAdminSupabaseClient } from "@/lib/supabase-server";
 
 export async function GET(
   _request: Request,
@@ -9,7 +9,7 @@ export async function GET(
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
 
     // Look up by base_token_symbol (lowercase slug) or by UUID
     const { data, error } = await supabase
