@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+
+const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 interface TokenDetail {
   id: string;
@@ -28,6 +32,13 @@ interface TokenDetail {
   minutesSinceLaunch?: number;
 }
 
+interface WalletToken {
+  mint: string;       // "sol" or Solana mint address
+  symbol: string;
+  balance: number;
+  isDirect: boolean;  // true if matches base token symbol
+}
+
 export default function TokenDetailPage() {
   const params = useParams();
   const tokenId = params.id as string;
@@ -38,6 +49,14 @@ export default function TokenDetailPage() {
   const [trading, setTrading] = useState(false);
   const [tradeMsg, setTradeMsg] = useState("");
 
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const walletAddress = publicKey?.toString() ?? null;
+
+  const [walletTokens, setWalletTokens] = useState<WalletToken[]>([]);
+  const [payWithMint, setPayWithMint] = useState<string>("sol");
+  const [loadingTokens, setLoadingTokens] = useState(false);
+
   useEffect(() => {
     fetch(`/api/tokens/${tokenId}`)
       .then((r) => r.json())
@@ -45,6 +64,78 @@ export default function TokenDetailPage() {
       .catch(() => setToken(null))
       .finally(() => setLoading(false));
   }, [tokenId]);
+
+  // Fetch wallet token balances when in buy mode and wallet connected
+  useEffect(() => {
+    if (!publicKey || !connection || tradeDirection !== "buy" || !token) return;
+
+    async function fetchWalletTokens() {
+      setLoadingTokens(true);
+      try {
+        // 1. SOL balance
+        const solBalance = await connection.getBalance(publicKey!);
+        const solUi = solBalance / 1e9;
+
+        // 2. SPL tokens
+        const accounts = await connection.getParsedTokenAccountsByOwner(publicKey!, {
+          programId: TOKEN_PROGRAM_ID,
+        });
+
+        const spls = accounts.value
+          .map((a) => ({
+            mint: a.account.data.parsed.info.mint as string,
+            balance: a.account.data.parsed.info.tokenAmount.uiAmount as number,
+          }))
+          .filter((t) => t.balance > 0);
+
+        // 3. Fetch symbols from Jupiter token list
+        let symbolMap: Record<string, string> = {};
+        if (spls.length > 0) {
+          const mints = spls.map((t) => t.mint).join(",");
+          try {
+            const res = await fetch(`https://lite-api.jup.ag/tokens/v1/mints?mints=${mints}`);
+            if (res.ok) {
+              const data: Array<{ address: string; symbol: string }> = await res.json();
+              data.forEach((t) => {
+                symbolMap[t.address] = t.symbol;
+              });
+            }
+          } catch {
+            // Jupiter API unavailable — use fallback labels
+          }
+        }
+
+        // 4. Build token list: SOL first, then SPL sorted by isDirect first
+        const baseSymbol = token!.baseTokenSymbol.toUpperCase();
+        const tokens: WalletToken[] = [
+          { mint: "sol", symbol: "SOL", balance: solUi, isDirect: false },
+          ...spls
+            .map((t) => ({
+              mint: t.mint,
+              symbol:
+                symbolMap[t.mint] ??
+                t.mint.slice(0, 4) + "..." + t.mint.slice(-4),
+              balance: t.balance,
+              isDirect:
+                (symbolMap[t.mint] ?? "").toUpperCase() === baseSymbol,
+            }))
+            .sort((a, b) => (b.isDirect ? 1 : 0) - (a.isDirect ? 1 : 0)),
+        ];
+
+        setWalletTokens(tokens);
+        // Auto-select base token if available, else SOL
+        const direct = tokens.find((t) => t.isDirect);
+        setPayWithMint(direct ? direct.mint : "sol");
+      } catch {
+        // Wallet read error — show empty state
+        setWalletTokens([]);
+      } finally {
+        setLoadingTokens(false);
+      }
+    }
+
+    fetchWalletTokens();
+  }, [publicKey, connection, tradeDirection, token]);
 
   async function handleTrade(e: React.FormEvent) {
     e.preventDefault();
@@ -57,8 +148,10 @@ export default function TokenDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          walletAddress: walletAddress ?? "stub_wallet",
           stTokenId: token.id,
           direction: tradeDirection,
+          inputToken: tradeDirection === "buy" ? payWithMint : undefined,
           solAmount: tradeDirection === "buy" ? amount : undefined,
           tokenAmount: tradeDirection === "sell" ? amount : undefined,
         }),
@@ -101,6 +194,7 @@ export default function TokenDetailPage() {
 
   const isGenesis = token.genesisStatus === "launched";
   const taxRate = token.currentTaxRate ?? (isGenesis ? Math.max(10, 95 - (token.minutesSinceLaunch ?? 0)) : 10);
+  const selectedToken = walletTokens.find((t) => t.mint === payWithMint);
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
@@ -228,6 +322,46 @@ export default function TokenDetailPage() {
                     </button>
                   </div>
 
+                  {/* Pay with selector — Buy mode only */}
+                  {tradeDirection === "buy" && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Pay with</p>
+                      {!walletAddress ? (
+                        <p className="text-sm text-muted-foreground">
+                          Connect wallet to see available tokens
+                        </p>
+                      ) : loadingTokens ? (
+                        <p className="text-sm text-muted-foreground">Loading wallet...</p>
+                      ) : walletTokens.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No tokens found in wallet</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {walletTokens.map((t) => (
+                            <button
+                              key={t.mint}
+                              onClick={() => setPayWithMint(t.mint)}
+                              className={`px-3 py-1.5 rounded-lg border text-sm flex items-center gap-1.5 transition-colors ${
+                                payWithMint === t.mint
+                                  ? "border-primary bg-primary/10"
+                                  : "border-muted hover:border-primary/50"
+                              }`}
+                            >
+                              <span className="font-medium">{t.symbol}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {t.balance.toFixed(4)}
+                              </span>
+                              {t.isDirect ? (
+                                <span className="text-xs text-green-500 font-medium">Direct</span>
+                              ) : (
+                                <span className="text-xs text-orange-400">Via Jupiter</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Tax Rate Info */}
                   <div className="p-3 bg-muted/50 rounded-lg text-sm">
                     <div className="flex justify-between">
@@ -247,10 +381,23 @@ export default function TokenDetailPage() {
                     </div>
                   </div>
 
+                  {/* Route display */}
+                  {tradeDirection === "buy" && selectedToken && (
+                    <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded">
+                      {selectedToken.isDirect
+                        ? `${token.baseTokenSymbol} → [LQST Protocol] → ${token.name}`
+                        : `${selectedToken.symbol} → [Jupiter] → ${token.baseTokenSymbol} → [LQST] → ${token.name}`}
+                    </div>
+                  )}
+
                   <form onSubmit={handleTrade} className="space-y-3">
                     <div>
                       <Label htmlFor="trade-amount">
-                        {tradeDirection === "buy" ? "SOL to spend" : `${token.name} to sell`}
+                        {tradeDirection === "buy"
+                          ? selectedToken
+                            ? `${selectedToken.symbol} to spend`
+                            : "Amount to spend"
+                          : `${token.name} to sell`}
                       </Label>
                       <Input
                         id="trade-amount"

@@ -5,9 +5,10 @@ import { z } from "zod";
 // TODO: Add production rate limiting (e.g., Upstash Redis)
 
 const bodySchema = z.object({
-  walletAddress: z.string().min(32).max(44),
+  walletAddress: z.string().min(1).max(88),
   stTokenId: z.string().uuid(),
   direction: z.enum(["buy", "sell"]),
+  inputToken: z.string().optional(), // "sol" or SPL mint address; for buy direction only
   solAmount: z.number().positive().max(10_000).optional(),
   tokenAmount: z.number().positive().max(1_000_000_000).optional(),
 });
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parse.error.issues[0].message }, { status: 400 });
     }
 
-    const { walletAddress, stTokenId, direction, solAmount, tokenAmount } = parse.data;
+    const { walletAddress, stTokenId, direction, inputToken, solAmount, tokenAmount } = parse.data;
 
     if (direction === "buy" && !solAmount) {
       return NextResponse.json({ error: "solAmount required for buy" }, { status: 400 });
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
         st_token_id: stTokenId,
         trader_address: walletAddress,
         direction,
+        input_token: inputToken ?? null,
         sol_amount: tradeSOL,
         token_amount: tokenAmount ?? tradeSOL / 0.00000001,
         tax_rate: taxRate,
