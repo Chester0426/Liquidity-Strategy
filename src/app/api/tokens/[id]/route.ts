@@ -22,13 +22,13 @@ export async function GET(
       return NextResponse.json({ token: null }, { status: 404 });
     }
 
-    // Aggregate LP position
+    // Aggregate LP position (base_token/ST pair — genesis SOL was used to buy base token)
     const { data: lpData } = await supabase
       .from("lp_positions")
-      .select("sol_amount, token_amount")
+      .select("base_token_amount, token_amount")
       .eq("st_token_id", data.id);
 
-    const lpSOL = (lpData ?? []).reduce((s, r) => s + (r.sol_amount ?? 0), 0);
+    const lpBaseToken = (lpData ?? []).reduce((s, r) => s + (r.base_token_amount ?? 0), 0);
     const lpTokens = (lpData ?? []).reduce((s, r) => s + (r.token_amount ?? 0), 0);
 
     // Aggregate trades
@@ -71,7 +71,7 @@ export async function GET(
       genesisSOLRaised: data.genesis_sol_raised,
       genesisSOLTarget: data.genesis_sol_target,
       launchedAt: data.launched_at,
-      lpSOL,
+      lpBaseToken,
       lpTokens,
       totalTrades,
       totalVolume,

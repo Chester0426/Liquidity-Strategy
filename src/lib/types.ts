@@ -47,7 +47,9 @@ export interface Trade {
 export interface LPPosition {
   id: string;
   st_token_id: string;
-  sol_amount: number;
+  /** Amount of base token (e.g., PUMP) purchased with genesis SOL and paired into LP */
+  base_token_amount: number;
+  /** Amount of ST tokens (e.g., PUMPST) paired into LP — 80% of total supply */
   token_amount: number;
   lp_token_address: string | null;
   is_locked: boolean;
