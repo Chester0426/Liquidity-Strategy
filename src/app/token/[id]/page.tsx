@@ -19,8 +19,9 @@ interface TokenDetail {
   genesisSOLRaised: number;
   genesisSOLTarget: number;
   launchedAt?: string;
-  lpSOL?: number;
+  lpBaseToken?: number;
   lpTokens?: number;
+  lpTokenAddress?: string | null;
   totalTrades?: number;
   totalVolume?: number;
   currentTaxRate?: number;
@@ -156,26 +157,30 @@ export default function TokenDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">LP SOL Locked</span>
-                <span className="font-medium">{(token.lpSOL ?? 0).toFixed(4)} SOL</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">LP Tokens Locked</span>
-                <span className="font-medium">
-                  {(token.lpTokens ?? 0).toLocaleString()} {token.name}
+                <span className="text-muted-foreground">
+                  ORCA {token.baseTokenSymbol}/SOL LP 價值
+                </span>
+                <span className="font-medium text-muted-foreground italic">
+                  — (需要鏈上數據)
                 </span>
               </div>
               <Separator />
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Trades</span>
-                <span className="font-medium">{(token.totalTrades ?? 0).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Volume</span>
-                <span className="font-medium">{(token.totalVolume ?? 0).toFixed(4)} SOL</span>
-              </div>
+              {token.lpTokenAddress && !token.lpTokenAddress.startsWith("stub_") ? (
+                <a
+                  href={`https://solscan.io/account/${token.lpTokenAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
+                >
+                  在 Solscan 查看 {token.name} LP 錢包 ↗
+                </a>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  LP 錢包地址將在部署上鏈後顯示
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
-                LP is permanently locked. Protocol-owned liquidity never exits.
+                LP 永久鎖倉，協議自有流動性永不撤出。
               </p>
             </CardContent>
           </Card>
