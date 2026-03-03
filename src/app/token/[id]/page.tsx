@@ -376,7 +376,7 @@ export default function TokenDetailPage() {
                   {/* Trade form */}
                   <form onSubmit={handleTrade} className="space-y-3">
                     {/* Amount input + token selector */}
-                    <div className="flex rounded-xl border bg-muted/20 overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+                    <div className="flex items-stretch rounded-xl border bg-muted/20 overflow-hidden focus-within:ring-1 focus-within:ring-ring min-h-[56px]">
                       <Input
                         id="trade-amount"
                         type="number"
@@ -385,7 +385,7 @@ export default function TokenDetailPage() {
                         placeholder="0.00"
                         value={tradeAmount}
                         onChange={(e) => setTradeAmount(e.target.value)}
-                        className="border-0 bg-transparent text-lg h-14 flex-1 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
+                        className="border-0 bg-transparent text-lg flex-1 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0"
                       />
                       {tradeDirection === "buy" ? (
                         <Select
@@ -395,7 +395,7 @@ export default function TokenDetailPage() {
                             setTradeAmount("");
                           }}
                         >
-                          <SelectTrigger className="border-0 border-l rounded-none bg-transparent h-14 w-28 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0">
+                          <SelectTrigger className="border-0 border-l rounded-none bg-muted/20 h-full w-28 shrink-0 text-sm font-semibold focus:ring-0 focus:ring-offset-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -404,7 +404,7 @@ export default function TokenDetailPage() {
                           </SelectContent>
                         </Select>
                       ) : (
-                        <div className="h-14 px-4 border-l flex items-center text-sm font-semibold text-muted-foreground shrink-0">
+                        <div className="px-4 border-l flex items-center text-sm font-semibold text-muted-foreground shrink-0">
                           {token.name}
                         </div>
                       )}
