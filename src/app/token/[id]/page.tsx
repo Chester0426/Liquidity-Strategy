@@ -15,10 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const SPL_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const RPC_ENDPOINTS = [
   process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
-  "https://rpc.ankr.com/solana",
   "https://api.mainnet-beta.solana.com",
 ].filter(Boolean) as string[];
 
@@ -29,16 +27,24 @@ async function solanaRpc(method: string, params: unknown[]) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(12000),
       });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        console.warn(`[LQST] RPC ${rpc} HTTP ${res.status}`);
+        continue;
+      }
       const data = await res.json();
-      if (data.error) continue;
+      if (data.error) {
+        console.warn(`[LQST] RPC ${rpc} error:`, data.error.message);
+        continue;
+      }
       return data.result;
-    } catch {
+    } catch (err) {
+      console.warn(`[LQST] RPC ${rpc} failed:`, err);
       continue;
     }
   }
+  console.warn("[LQST] All RPCs failed for:", method);
   return null;
 }
 
@@ -90,25 +96,40 @@ export default function TokenDetailPage() {
       .finally(() => setLoading(false));
   }, [tokenId]);
 
-  // Resolve base token mint address via Jupiter
+  // Resolve base token mint address via DexScreener (Jupiter API is deprecated)
   useEffect(() => {
     if (!token) return;
     async function resolveMint() {
       try {
+        const symbol = token!.baseTokenSymbol.toUpperCase();
         const res = await fetch(
-          `https://lite-api.jup.ag/tokens/v1/search?query=${encodeURIComponent(token!.baseTokenSymbol)}`
+          `https://api.dexscreener.com/latest/dex/search/?q=${encodeURIComponent(symbol)}`,
+          { signal: AbortSignal.timeout(10000) }
         );
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.warn("[LQST] DexScreener HTTP", res.status);
+          return;
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const results: any[] = await res.json();
-        const items = Array.isArray(results) ? results : (results as { tokens?: unknown[] }).tokens ?? [];
+        const data: any = await res.json();
+        // Find the Solana pair with matching symbol, sorted by liquidity
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const match = (items as any[]).find(
-          (t) => t.symbol?.toUpperCase() === token!.baseTokenSymbol.toUpperCase()
-        );
-        if (match?.address) setBaseTokenMint(match.address);
-      } catch {
-        // ignore — balance for base token will show 0
+        const match = (data.pairs ?? [])
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .filter((p: any) =>
+            p.chainId === "solana" &&
+            p.baseToken?.symbol?.toUpperCase() === symbol
+          )
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .sort((a: any, b: any) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
+        if (match?.baseToken?.address) {
+          console.log("[LQST] Resolved", symbol, "→", match.baseToken.address);
+          setBaseTokenMint(match.baseToken.address);
+        } else {
+          console.warn("[LQST] No Solana token found for symbol:", symbol);
+        }
+      } catch (err) {
+        console.warn("[LQST] Mint resolution failed:", err);
       }
     }
     resolveMint();
@@ -121,13 +142,18 @@ export default function TokenDetailPage() {
 
     async function fetchBalances() {
       try {
-        // SOL balance
+        // SOL balance via getBalance
         const balResult = await solanaRpc("getBalance", [address]);
-        setSolBalance((balResult?.value ?? 0) / 1e9);
+        if (balResult?.value != null) {
+          setSolBalance(balResult.value / 1e9);
+          console.log("[LQST] SOL balance:", balResult.value / 1e9);
+        } else {
+          console.warn("[LQST] SOL balance returned null for", address);
+        }
 
-        // Base token balance
+        // Base token (SPL) balance via getTokenAccountsByOwner
         if (baseTokenMint) {
-          const splResult = await solanaRpc("getParsedTokenAccountsByOwner", [
+          const splResult = await solanaRpc("getTokenAccountsByOwner", [
             address,
             { mint: baseTokenMint },
             { encoding: "jsonParsed" },
@@ -136,13 +162,14 @@ export default function TokenDetailPage() {
           const total = (splResult?.value ?? []).reduce(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (sum: number, a: any) =>
-              sum + (a.account.data.parsed.info.tokenAmount.uiAmount ?? 0),
+              sum + (a.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0),
             0
           );
           setBaseTokenBalance(total);
+          console.log("[LQST] Base token balance:", total, "mint:", baseTokenMint);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn("[LQST] Balance fetch error:", err);
       }
     }
 

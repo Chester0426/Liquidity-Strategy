@@ -10,10 +10,10 @@ import {
 } from "@solana/wallet-adapter-wallets";
 
 export function SolanaWalletProvider({ children }: { children: React.ReactNode }) {
-  // Ankr public RPC — no registration needed, supports getParsedTokenAccountsByOwner
+  // Official Solana mainnet RPC (Ankr deprecated free tier)
   // Override with NEXT_PUBLIC_SOLANA_RPC_URL for dedicated endpoints (Helius/QuickNode)
   const endpoint = useMemo(
-    () => process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "https://rpc.ankr.com/solana",
+    () => process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com",
     []
   );
 
