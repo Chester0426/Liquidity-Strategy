@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 
 const RPC_ENDPOINTS = [
+  "/api/rpc",  // proxy (server-to-server, avoids 403 from public RPCs)
   process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
   "https://api.mainnet-beta.solana.com",
 ].filter(Boolean) as string[];
