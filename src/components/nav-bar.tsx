@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,15 @@ function shortAddress(pubkey: string) {
 }
 
 export function NavBar() {
-  const { publicKey, connecting, connected, disconnect, select, wallets } = useWallet();
+  const { publicKey, connecting, connected, disconnect, select, connect, wallets, wallet } = useWallet();
   const [showWalletList, setShowWalletList] = useState(false);
+
+  // Connect when wallet is selected but not yet connected
+  useEffect(() => {
+    if (wallet && !connected && !connecting) {
+      connect().catch((err) => console.warn("[LQST] Wallet connect failed:", err));
+    }
+  }, [wallet, connected, connecting, connect]);
 
   const handleConnect = useCallback(() => {
     setShowWalletList(true);
